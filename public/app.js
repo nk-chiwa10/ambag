@@ -237,7 +237,7 @@ async function loadCollection() {
     const message = shortError(err);
     setStatus(
       /decode|bad_data/i.test(message)
-        ? "That address doesn't look like an AmbAG contract on BSC Testnet."
+        ? `That address doesn't look like an AmbAG contract on ${CHAIN_NAME}.`
         : `Load failed: ${message}`,
       "error"
     );
