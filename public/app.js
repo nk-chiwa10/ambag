@@ -1,3 +1,5 @@
+import { reconcileRows } from "/reconcile.js";
+
 const { ethers } = window;
 
 const CHAIN_ID = 97;
@@ -213,51 +215,14 @@ async function extract() {
 
 function reconcile() {
   if (!state.extraction || !state.collection) return null;
-
-  const onChainByRef = {};
-  for (const c of state.contributions) {
-    let ref = "—";
-    try {
-      ref = ethers.decodeBytes32String(c.ref);
-    } catch {
-      // leave as unknown
-    }
-    onChainByRef[ref] = (onChainByRef[ref] || 0n) + c.amount;
-  }
-
-  const seen = new Set();
-  const rows = state.extraction.rows.map((r) => {
-    const roster = ROSTER.find((x) => normalize(x.name) === normalize(r.name));
-    const amount = ethers.parseEther(r.amount_tbnb);
-    const key = `${normalize(r.name)}|${r.amount_tbnb}`;
-    let status = "unknown";
-    let ref = roster?.ref || "—";
-    let actual = 0n;
-    let missing = 0n;
-    if (roster) {
-      actual = onChainByRef[roster.ref] || 0n;
-      if (seen.has(key)) {
-        status = "duplicate";
-      } else if (actual >= ethers.parseEther(roster.expected)) {
-        status = "matched";
-      } else if (actual > 0n) {
-        status = "short";
-        missing = ethers.parseEther(roster.expected) - actual;
-      } else {
-        status = "missing";
-      }
-    }
-    seen.add(key);
-    return { ...r, amount, ref, actual, missing, status };
+  return reconcileRows({
+    rows: state.extraction.rows,
+    contributions: state.contributions,
+    roster: ROSTER,
+    parseEther: ethers.parseEther,
+    decodeRef: ethers.decodeBytes32String,
+    onchainTotal: state.collection.totalRaised
   });
-
-  const listTotal = state.extraction.rows.reduce((s, r) => s + ethers.parseEther(r.amount_tbnb), 0n);
-  const expectedTotal = ROSTER.reduce((s, r) => s + ethers.parseEther(r.expected), 0n);
-  const onchainTotal = state.collection.totalRaised;
-  const gap = expectedTotal > onchainTotal ? expectedTotal - onchainTotal : 0n;
-  const flags = rows.filter((r) => r.status !== "matched").length;
-
-  return { rows, listTotal, expectedTotal, onchainTotal, gap, flags };
 }
 
 function renderReconciliation() {
@@ -342,10 +307,6 @@ function setAiStatus(msg) { $("aiStatus").textContent = msg; }
 function fmt(v) {
   const s = ethers.formatEther(v);
   return Number(s).toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
-}
-
-function normalize(s) {
-  return String(s).toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
 }
 
 function escapeHtml(s) {

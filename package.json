@@ -9,6 +9,7 @@
     "wallets": "node scripts/wallets.js",
     "selftest": "node scripts/selftest.js",
     "inspect": "node scripts/inspect.js",
+    "test:reconcile": "node scripts/reconcile-test.js",
     "seed": "node scripts/seed.js"
   },
   "dependencies": {
