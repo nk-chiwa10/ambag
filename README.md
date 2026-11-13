@@ -11,6 +11,7 @@ One link. One target. One rule. Members pay in tBNB on BSC Testnet. The AI trans
 - `public/` — the member link and treasurer dashboard.
 - `public/deck.html` — the 6-slide pitch deck. Open `/deck.html`, arrow keys to move, `P` to print to PDF.
 - `scripts/seed.js` — creates the happy and failed collections and pre-seeds the demo payments.
+- `npm run inspect` — read-only chain dump: collections, references, contributions, vendor balance. No key required.
 - `concepts_brief.md` — the brainstorm decisions and demo script.
 
 ## 1. Deploy
