@@ -104,10 +104,7 @@ async function loadCollection() {
     setStatus("Enter a valid contract address.");
     return;
   }
-  if (!state.provider) {
-    setStatus("Connect a wallet first.");
-    return;
-  }
+  if (!state.provider) state.provider = new ethers.JsonRpcProvider(CHAIN_PARAMS.rpcUrls[0]);
   state.address = address;
   state.collectionId = id;
   localStorage.setItem("ambag.contract", address);
@@ -133,6 +130,9 @@ async function refresh() {
     released: c.released
   };
   state.contributions = await state.contract.contributionsOf(state.collectionId);
+  state.vendorBalance = state.provider
+    ? await state.provider.getBalance(state.collection.vendor)
+    : 0n;
   renderCollection();
   renderReconciliation();
   $("collectionPanel").hidden = false;
@@ -147,6 +147,7 @@ function renderCollection() {
   $("onchain").textContent = `${fmt(c.totalRaised)} tBNB`;
   $("deadline").textContent = new Date(Number(c.deadline) * 1000).toLocaleString();
   $("vendor").textContent = c.vendor;
+  $("vendorBal").textContent = `${fmt(state.vendorBalance ?? 0n)} tBNB`;
   const pct = c.target > 0n ? Number((c.totalRaised * 10000n) / c.target) / 100 : 0;
   $("bar").style.width = `${Math.min(pct, 100)}%`;
   $("bar").classList.toggle("done", c.totalRaised >= c.target);
@@ -352,7 +353,13 @@ function escapeHtml(s) {
 }
 
 function shortError(err) {
-  return err?.shortMessage || err?.reason || err?.message || String(err);
+  const revert = err?.revert?.args?.[0] ?? err?.reason;
+  if (typeof revert === "string" && revert) return revert;
+  const raw = [err?.shortMessage, err?.reason, err?.message, err?.info?.error?.message]
+    .filter(Boolean)
+    .join(" | ");
+  const match = raw.match(/revert(?:ed)?:?\s*"?([^"|\n]+)"?/i);
+  return match ? match[1].trim() : raw || String(err);
 }
 
 init();
