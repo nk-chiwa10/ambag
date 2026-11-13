@@ -9,8 +9,9 @@ dotenv.config();
 const ROOT = process.cwd();
 const SOURCE = path.join(ROOT, "build", "AmbAG.sol");
 const ENV = path.join(ROOT, ".env");
-const CHAIN_ID = 97;
+const CHAIN_ID = Number(process.env.CHAIN_ID || 97);
 const RPC_URL = process.env.RPC_URL || "https://data-seed-prebsc-1-s1.bnbchain.org:8545";
+const LOCAL = /^https?:\/\/(127\.0\.0\.1|localhost)/i.test(RPC_URL);
 
 function setEnv(key, value) {
   const line = `${key}=${value}`;
@@ -74,10 +75,14 @@ async function main() {
 
   if (balance === 0n) {
     console.error("\nBLOCKED: the deployer has no tBNB.");
-    console.error(`Fund this address on BSC Testnet (chain 97), then rerun: npm run deploy`);
-    console.error(`Address: ${signer.address}`);
-    console.error(`Faucets: https://www.bnbchain.org/en/testnet-faucet | https://testnet.bnbchain.org/faucet-smart`);
-    console.error(`Explorer: https://testnet.bscscan.com/address/${signer.address}`);
+    if (LOCAL) {
+      console.error(`Start the local node first (npm run localnet), then rerun: npm run deploy`);
+    } else {
+      console.error(`Fund this address on BSC Testnet (chain ${CHAIN_ID}), then rerun: npm run deploy`);
+      console.error(`Address: ${signer.address}`);
+      console.error(`Faucets: https://www.bnbchain.org/en/testnet-faucet | https://testnet.bnbchain.org/faucet-smart`);
+      console.error(`Explorer: https://testnet.bscscan.com/address/${signer.address}`);
+    }
     process.exit(2);
   }
 
@@ -99,9 +104,13 @@ async function main() {
 
   console.log(`\nDeployed at: ${address}`);
   console.log(`Gas used:    ${receipt.gasUsed} (cost ${ethers.formatEther(cost)} tBNB)`);
-  console.log(`Explorer:    https://testnet.bscscan.com/address/${address}`);
+  if (LOCAL) {
+    console.log(`Chain:       local node (${CHAIN_ID}); no BscScan entry for this one.`);
+  } else {
+    console.log(`Explorer:    https://testnet.bscscan.com/address/${address}`);
+    console.log(`\nNext: verify at https://testnet.bscscan.com/verifyContract (compiler 0.8.19, optimization on, 200 runs), then: npm run seed`);
+  }
   console.log(`Written to .env as CONTRACT_ADDRESS and to build/AmbAG.artifact.json`);
-  console.log(`\nNext: verify at https://testnet.bscscan.com/verifyContract (compiler 0.8.19, optimization on, 200 runs), then: npm run seed`);
 }
 
 main().catch((err) => {

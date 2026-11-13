@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node server.js",
     "deploy": "node scripts/deploy.js",
+    "localnet": "node scripts/localnet.js",
     "wallets": "node scripts/wallets.js",
     "selftest": "node scripts/selftest.js",
     "inspect": "node scripts/inspect.js",
@@ -18,6 +19,7 @@
     "express": "^4.21.0"
   },
   "devDependencies": {
+    "ganache": "^7.9.2",
     "solc": "^0.8.19"
   }
 }
