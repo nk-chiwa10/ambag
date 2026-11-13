@@ -46,7 +46,7 @@ This means the honest track is Payments, not AI Agents. A single extraction call
 
 The progress bar is setup. The memorable moment is a payment list that looks complete but is not.
 
-Staged numbers: target 0.50 tBNB; five members at 0.10 each. On-chain: four full payments and one 0.08 payment = 0.48. The treasurer's list shows 0.58 because one 0.10 row appears twice. A naive treasurer sees 0.58 and thinks the target is met. The AI reconciles the list to the chain: one duplicate row, one short payment of 0.02. The contract's release reverts at 0.48. The short member tops up 0.02. The chain total reaches 0.50. Release succeeds; the vendor balance rises.
+Staged numbers: target 0.30 tBNB; three members (Maria Santos, Jose Dela Cruz, Ella Garcia) at 0.10 each. On-chain: two full payments and one 0.08 payment = 0.28. The treasurer's list shows 0.38 because Jose's 0.10 row appears twice. A naive treasurer sees 0.38 and thinks the target is met. The AI reconciles the list to the chain: one duplicate row, one short payment of 0.02. The contract's release reverts at 0.28. Ella tops up 0.02. The chain total reaches 0.30. Release succeeds; the vendor balance rises.
 
 That one scene proves the chain alone is insufficient, because it cannot see the duplicate row in the treasurer's proof, and the AI is load-bearing, because it explains why the list and the ledger disagree. The contract still enforces custody and the target. The organizer signs the resolution.
 
@@ -91,7 +91,7 @@ The chain is a pseudonymous cash register: complete about money, silent about pe
 - One Solidity contract on BSC Testnet: target, deadline, fixed vendor, `contribute(id, ref)`, `release(id)`, `claimRefund(id)`.
 - One AI endpoint: transcribe a messy payment list into rows; the app matches exact reference and amount, checks hashes, and flags duplicates, short payments, unknown references, and name mismatches.
 - One dashboard: public view and treasurer view, progress bar, one exception card, release and claim buttons.
-- Two seeded collections: happy path with a 0.50 target, 0.48 on-chain, one duplicate row in the list, and one 0.02 short payment; failed path with a past deadline.
+- Two seeded collections: happy path with a 0.30 target, 0.28 on-chain, one duplicate row in the list, and one 0.02 short payment; failed path with a past deadline.
 - Verified contract on chain 97, public Git repo, commits on Nov 12–13, pitch deck, 90-second backup video.
 
 **Out-of-Scope Non-Goals**
@@ -139,9 +139,9 @@ The chain is a pseudonymous cash register: complete about money, silent about pe
 
 1. Open on the mess: the group chat and the spreadsheet. No wallet modal (10 seconds).
 2. Show the verified contract on BscScan (10 seconds).
-3. Happy collection: target 0.50, on-chain 0.48. The treasurer's list says 0.58. AI flags a duplicate row and a 0.02 short payment. The exception card shows the evidence (20 seconds).
+3. Happy collection: target 0.30, on-chain 0.28. The treasurer's list says 0.38. AI flags a duplicate row and a 0.02 short payment. The exception card shows the evidence (20 seconds).
 4. Click Release. It reverts: target not met (10 seconds). This is the guardrail beat.
-5. The short member tops up 0.02. Total 0.50. Release succeeds; the vendor balance rises (20 seconds).
+5. Ella tops up 0.02. Total 0.30. Release succeeds; the vendor balance rises (20 seconds).
 6. Switch to the failed collection. If time, one claim click; otherwise show `claimRefund` on BscScan and say the refund is pull-based (10 seconds).
 
 **Build Sequence (120 minutes)**
