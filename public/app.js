@@ -2,15 +2,21 @@ import { reconcileRows } from "/reconcile.js";
 
 const { ethers } = window;
 
-const CHAIN_ID = 97;
-const CHAIN_HEX = "0x61";
+// Chain config comes from the server so the browser signs and reads on the same chain.
+const CONFIG = await fetch("/api/config")
+  .then((res) => (res.ok ? res.json() : null))
+  .catch(() => null);
+
+const CHAIN_ID = CONFIG?.chainId ?? 97;
+const CHAIN_HEX = CONFIG?.chainHex ?? "0x61";
+const CHAIN_NAME = CONFIG?.chainName ?? "BNB Smart Chain Testnet";
 const CHAIN_PARAMS = {
   chainId: CHAIN_HEX,
-  chainName: "BNB Smart Chain Testnet",
+  chainName: CHAIN_NAME,
   nativeCurrency: { name: "tBNB", symbol: "tBNB", decimals: 18 },
-  rpcUrls: ["https://data-seed-prebsc-1-s1.bnbchain.org:8545"],
-  blockExplorerUrls: ["https://testnet.bscscan.com"]
+  rpcUrls: [CONFIG?.rpcUrl ?? "https://data-seed-prebsc-1-s1.bnbchain.org:8545"]
 };
+if (CONFIG?.explorer) CHAIN_PARAMS.blockExplorerUrls = [CONFIG.explorer];
 
 const ABI = [
   "function collections(uint256) view returns (address organizer, address vendor, uint256 target, uint256 deadline, uint256 totalRaised, bool released)",
@@ -68,13 +74,15 @@ const state = {
 const $ = (id) => document.getElementById(id);
 
 function init() {
-  $("contract").value = localStorage.getItem("ambag.contract") || "";
+  $("contract").value = localStorage.getItem("ambag.contract") || CONFIG?.contractAddress || "";
   $("collectionId").value = localStorage.getItem("ambag.collectionId") || "1";
   $("memberName").innerHTML = ROSTER.map(
     (r) => `<option value="${r.ref}">${r.name} — ${r.expected} tBNB</option>`
   ).join("");
   updateMemberFields();
   renderEmptyTable();
+  setWalletUI("");
+  $("chainEyebrow").textContent = `${CHAIN_NAME} · chain ${CHAIN_ID}`;
 
   $("loadForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -168,7 +176,7 @@ async function connectWallet() {
       }
       state.provider = new ethers.BrowserProvider(window.ethereum);
       network = await state.provider.getNetwork();
-      if (Number(network.chainId) !== CHAIN_ID) throw new Error("Wrong network. Pick BSC Testnet (chain 97).");
+      if (Number(network.chainId) !== CHAIN_ID) throw new Error(`Wrong network. Switch your wallet to ${CHAIN_NAME} (chain ${CHAIN_ID}).`);
     }
 
     state.signer = await state.provider.getSigner();
@@ -215,7 +223,7 @@ async function loadCollection() {
   setBusy($("load"), true);
   setActionStatus("");
   setPayStatus("");
-  setStatus("Reading the collection from BSC Testnet…", "info");
+  setStatus(`Reading the collection from ${CHAIN_NAME}…`, "info");
   try {
     await refresh();
     setStatus(`Collection #${id} loaded from ${shortAddr(state.address)}.`, "success");
@@ -321,8 +329,16 @@ function renderCollection() {
   else if (ended) hint = "Deadline passed and the target was missed. Contributors can claim refunds.";
   $("actionHint").textContent = hint;
 
-  const explorer = CHAIN_PARAMS.blockExplorerUrls[0];
-  $("explorerLink").href = `${explorer}/address/${state.address}`;
+  const explorer = CHAIN_PARAMS.blockExplorerUrls?.[0];
+  const link = $("explorerLink");
+  if (explorer) {
+    link.hidden = false;
+    link.href = `${explorer}/address/${state.address}`;
+    link.title = "Open in the block explorer";
+  } else {
+    link.hidden = true;
+    link.removeAttribute("href");
+  }
 }
 
 function updateMemberFields() {
@@ -379,7 +395,7 @@ async function pay() {
     await refresh();
     setPayStatus(`Paid ${fmt(value)} tBNB for ${ref}. The ledger is updated.`, "success");
   } catch (err) {
-    setPayStatus(`Payment failed: ${shortError(err)}`, "error");
+    setPayStatus(`Payment failed: ${await readableError(err, () => state.contract.contribute.staticCall(state.collectionId, ethers.encodeBytes32String(ref), { value }))}`, "error");
   } finally {
     setBusy($("pay"), false);
     if (state.collection) renderCollection();
@@ -546,7 +562,7 @@ async function release() {
     await refresh();
     setActionStatus("Released. The vendor has been paid.", "success");
   } catch (err) {
-    setActionStatus(`Release failed: ${shortError(err)}`, "error");
+    setActionStatus(`Release failed: ${await readableError(err, () => state.contract.release.staticCall(state.collectionId))}`, "error");
   } finally {
     setBusy($("release"), false);
     if (state.collection) renderCollection();
@@ -568,7 +584,7 @@ async function claimRefund() {
     await refresh();
     setActionStatus("Refund claimed. The tBNB is back in your wallet.", "success");
   } catch (err) {
-    setActionStatus(`Refund failed: ${shortError(err)}`, "error");
+    setActionStatus(`Refund failed: ${await readableError(err, () => state.contract.claimRefund.staticCall(state.collectionId))}`, "error");
   } finally {
     setBusy($("refund"), false);
     if (state.collection) renderCollection();
@@ -607,13 +623,13 @@ function setWalletUI(addr) {
   const chip = $("networkChip");
   const button = $("connect");
   if (addr) {
-    $("network").textContent = "BSC Testnet · connected";
+    $("network").textContent = `${CHAIN_NAME} · connected`;
     $("connectLabel").textContent = shortAddr(addr);
     button.title = addr;
     button.setAttribute("aria-label", `Wallet connected: ${addr}`);
     chip.dataset.state = "connected";
   } else {
-    $("network").textContent = "BSC Testnet · read-only";
+    $("network").textContent = `${CHAIN_NAME} · read-only`;
     $("connectLabel").textContent = "Connect wallet";
     button.removeAttribute("title");
     button.setAttribute("aria-label", "Connect wallet");
@@ -707,6 +723,19 @@ function shortError(err) {
     .join(" | ");
   const match = raw.match(/revert(?:ed)?:?\s*"?([^"|\n]+)"?/i);
   return hintFor(match ? match[1].trim() : raw || String(err));
+}
+
+// A wallet's gas estimate can fail with no reason attached. Re-running the same call
+// as eth_call returns the revert string, so the user sees "target not met", not "missing revert data".
+async function readableError(err, retry) {
+  const message = shortError(err);
+  if (!retry || !/missing revert data|coalesce/i.test(message)) return message;
+  try {
+    await retry();
+  } catch (inner) {
+    return shortError(inner);
+  }
+  return message;
 }
 
 function hintFor(message) {
