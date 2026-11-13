@@ -55,7 +55,7 @@
     <div class="kicker">BCC 2026 Build Day · Payments</div>
     <h1>AmbAG</h1>
     <p class="lead">One link. One target. One rule. Group-buy escrow for student orgs, with AI that reconciles the treasurer's messy payment list against the chain.</p>
-    <p class="mono">BSC Testnet · chain 97 · <span id="addr">CONTRACT ADDRESS</span></p>
+    <p class="mono"><span id="chainLabel">BSC-compatible EVM</span> · <span id="addr">CONTRACT ADDRESS</span></p>
     <div class="foot"><span>github.com/nk-chiwa10/ambag</span><span>1 / 6</span></div>
   </section>
 
@@ -104,7 +104,7 @@
       <li>Custody <span>— funds sit in the contract, not in a personal account.</span></li>
       <li>Permissionless release <span>— anyone can trigger the payout once the target is met.</span></li>
       <li>Pull refunds <span>— deadline missed, each member claims their own money.</span></li>
-      <li>Proof <span>— verified contract, public ledger, private roster.</span></li>
+      <li>Proof <span>— escrowed contract, public ledger, private roster.</span></li>
     </ul>
     <p style="margin-top:18px">The escrow is the commodity. <strong>The reconciliation is the product.</strong></p>
     <div class="foot"><span>AmbAG</span><span>5 / 6</span></div>
@@ -142,8 +142,18 @@
     if (e.key === "ArrowLeft") show(i - 1);
     if (e.key.toLowerCase() === "p") print();
   });
-  document.querySelector("#addr").textContent =
-    localStorage.getItem("ambag.contract") || "CONTRACT ADDRESS";
+  fetch("/api/config")
+    .then((res) => (res.ok ? res.json() : null))
+    .then((cfg) => {
+      if (!cfg) return;
+      document.querySelector("#chainLabel").textContent = `${cfg.chainName} · chain ${cfg.chainId}`;
+      document.querySelector("#addr").textContent =
+        localStorage.getItem("ambag.contract") || cfg.contractAddress || "CONTRACT ADDRESS";
+    })
+    .catch(() => {
+      document.querySelector("#addr").textContent =
+        localStorage.getItem("ambag.contract") || "CONTRACT ADDRESS";
+    });
 </script>
 </body>
 </html>
