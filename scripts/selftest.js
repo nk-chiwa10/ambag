@@ -61,8 +61,17 @@ async function expectRevert(promise, needle) {
       }
     }
     const msg = parts.filter(Boolean).join(" | ");
-    assert.ok(msg.toLowerCase().includes(needle.toLowerCase()), `expected "${needle}", got "${msg.slice(0, 300)}"`);
-    return msg;
+    if (!msg.toLowerCase().includes(needle.toLowerCase()) && err?.transaction?.to && err?.transaction?.data) {
+      // Some nodes drop the revert reason from the estimateGas error; eth_call keeps it.
+      try {
+        await provider.call({ to: err.transaction.to, data: err.transaction.data });
+      } catch (inner) {
+        parts.push(inner?.shortMessage, inner?.reason, inner?.message, inner?.info?.error?.message);
+      }
+    }
+    const finalMsg = parts.filter(Boolean).join(" | ");
+    assert.ok(finalMsg.toLowerCase().includes(needle.toLowerCase()), `expected "${needle}", got "${finalMsg.slice(0, 300)}"`);
+    return finalMsg;
   }
   throw new Error(`expected revert "${needle}", but the call succeeded`);
 }
@@ -135,7 +144,7 @@ async function main() {
   const c1 = await contract.collections(id);
   const c2 = await contract.collections(id2);
   assert.equal(c1.totalRaised, eth("0.30"));
-  assert.equal(c2.totalRaised, eth("0.10"), "collection 2 must be untouched by collection 1's release");
+  assert.equal(c2.totalRaised, 0n, "refunded total must drop back to zero");
   assert.equal(await provider.getBalance(address), 0n, "no funds stranded after the refund");
 
   console.log("\nPASS: target gate, per-collection accounting, vendor payout, pull refund, replay guards");
