@@ -9,6 +9,7 @@ One link. One target. One rule. Members pay in tBNB on BSC Testnet. The AI trans
 - `build/AmbAG.sol` — the contract.
 - `server.js` — local Express server and the `/api/extract` endpoint.
 - `public/` — the member link and treasurer dashboard.
+- `public/deck.html` — the 6-slide pitch deck. Open `/deck.html`, arrow keys to move, `P` to print to PDF.
 - `scripts/seed.js` — creates the happy and failed collections and pre-seeds the demo payments.
 - `concepts_brief.md` — the brainstorm decisions and demo script.
 

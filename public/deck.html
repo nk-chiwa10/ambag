@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AmbAG — BCC 2026 Build Day</title>
+<style>
+  :root { --ink:#0f141a; --muted:#5d6673; --line:#e2e6ec; --accent:#0b7a4b; --warn:#b42318; --paper:#fff; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; }
+  body { font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--ink); background:#0d1117; }
+  .deck { height:100vh; display:flex; align-items:center; justify-content:center; }
+  .slide { display:none; width:min(1100px,92vw); height:min(660px,88vh); background:var(--paper); border-radius:16px; padding:56px 64px; flex-direction:column; justify-content:center; position:relative; }
+  .slide.on { display:flex; }
+  .kicker { font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:14px; }
+  h1 { font-size:56px; line-height:1.02; letter-spacing:-.03em; margin:0 0 18px; }
+  h2 { font-size:36px; line-height:1.1; letter-spacing:-.02em; margin:0 0 22px; }
+  p { font-size:18px; line-height:1.5; color:var(--muted); margin:0 0 14px; max-width:62ch; }
+  .lead { font-size:21px; color:var(--ink); }
+  ul { margin:0; padding-left:22px; }
+  li { font-size:18px; line-height:1.55; color:var(--ink); margin-bottom:10px; }
+  li span { color:var(--muted); }
+  .big { font-size:64px; font-weight:700; letter-spacing:-.03em; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:26px; }
+  .card { border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .card .label { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:6px; }
+  .card .val { font-size:26px; font-weight:700; }
+  .bad { color:var(--warn); }
+  .good { color:var(--accent); }
+  .mono { font-family:ui-monospace,Consolas,monospace; font-size:15px; }
+  .foot { position:absolute; left:64px; right:64px; bottom:22px; display:flex; justify-content:space-between; font-size:12px; color:#9aa3af; }
+  .tag { display:inline-block; padding:3px 10px; border-radius:999px; background:#e8f5ee; color:var(--accent); font-size:12px; font-weight:700; }
+  .nav { position:fixed; bottom:16px; right:18px; color:#9aa3af; font-size:12px; }
+  .arrow { position:fixed; top:50%; transform:translateY(-50%); background:none; border:0; color:#7d8794; font-size:34px; cursor:pointer; padding:12px; }
+  .arrow.prev { left:8px; } .arrow.next { right:8px; }
+  @media print {
+    @page { size: 297mm 167mm; margin:0; }
+    body { background:#fff; }
+    .deck { display:block; height:auto; }
+    .slide { display:flex !important; width:100%; height:167mm; border-radius:0; page-break-after:always; }
+    .nav,.arrow { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <section class="slide on">
+    <div class="kicker">BCC 2026 Build Day · Payments</div>
+    <h1>AmbAG</h1>
+    <p class="lead">One link. One target. One rule. Group-buy escrow for student orgs, with AI that reconciles the treasurer's messy payment list against the chain.</p>
+    <p class="mono">BSC Testnet · chain 97 · <span id="addr">CONTRACT ADDRESS</span></p>
+    <div class="foot"><span>github.com/nk-chiwa10/ambag</span><span>1 / 6</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">The problem</div>
+    <h2>A group buy, twenty people, and nobody can prove who paid.</h2>
+    <ul>
+      <li>Payments arrive as screenshots in a group chat. <span>The ledger is the chat.</span></li>
+      <li>The treasurer rebuilds it in a spreadsheet. <span>Names, nicknames, partial payments.</span></li>
+      <li>If the vendor needs the full amount or the order dies, <span>someone fronts the money.</span></li>
+      <li>On the deadline, the question is simple: <span>is the target actually met?</span></li>
+    </ul>
+    <div class="foot"><span>AmbAG</span><span>2 / 6</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">What it does</div>
+    <h2>Money on-chain. Names off-chain. A human signs.</h2>
+    <div class="grid">
+      <div class="card"><div class="label">The contract</div><div class="val">Target · deadline · fixed vendor</div><p style="margin:8px 0 0;font-size:15px">Holds tBNB. Releases to the vendor only at target. After a missed deadline, each member claims a refund.</p></div>
+      <div class="card"><div class="label">The AI</div><div class="val">Transcribes, never decides</div><p style="margin:8px 0 0;font-size:15px">Reads the messy list, app matches refs and amounts against the chain, flags duplicates and short payments. The treasurer confirms.</p></div>
+    </div>
+    <p style="margin-top:22px"><span class="tag">Public money</span> &nbsp;The chain stores a 6-character ref, never a name.</p>
+    <div class="foot"><span>AmbAG</span><span>3 / 6</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">The demo</div>
+    <h2>The spreadsheet says done. The chain says 0.28.</h2>
+    <div class="grid">
+      <div class="card"><div class="label">Treasurer's list</div><div class="val">0.38 tBNB</div><p style="margin:6px 0 0;font-size:15px">Maria 0.10 · Jose 0.10 · Jose 0.10 · Ella 0.08</p></div>
+      <div class="card"><div class="label">On-chain</div><div class="val">0.28 tBNB</div><p style="margin:6px 0 0;font-size:15px">Target 0.30. One duplicate row, one 0.02 shortfall.</p></div>
+    </div>
+    <ul style="margin-top:22px">
+      <li>Release reverts <span class="bad mono">target not met</span></li>
+      <li>Ella tops up 0.02 <span>→ 0.30 on-chain</span></li>
+      <li>Release pays the vendor <span class="good">exactly 0.30</span></li>
+    </ul>
+    <div class="foot"><span>AmbAG</span><span>4 / 6</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Why a chain</div>
+    <h2>The rule has to hold when the treasurer is asleep.</h2>
+    <ul>
+      <li>Custody <span>— funds sit in the contract, not in a personal account.</span></li>
+      <li>Permissionless release <span>— anyone can trigger the payout once the target is met.</span></li>
+      <li>Pull refunds <span>— deadline missed, each member claims their own money.</span></li>
+      <li>Proof <span>— verified contract, public ledger, private roster.</span></li>
+    </ul>
+    <p style="margin-top:18px">The escrow is the commodity. <strong>The reconciliation is the product.</strong></p>
+    <div class="foot"><span>AmbAG</span><span>5 / 6</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Model &amp; next</div>
+    <h2>Orgs pay from their budget, not from the pot.</h2>
+    <div class="grid">
+      <div class="card"><div class="label">Pricing</div><div class="val">₱99 / collection or 1%</div><p style="margin:8px 0 0;font-size:15px">B2B: the student affairs office buys it for every recognized org.</p></div>
+      <div class="card"><div class="label">Phase 2</div><div class="val">Embedded wallets + GCash on-ramp</div><p style="margin:8px 0 0;font-size:15px">Peso stablecoin rail. Members never see gas.</p></div>
+    </div>
+    <p style="margin-top:26px;font-size:22px;color:var(--ink)">Every group buy has a moment where nobody can prove who paid. <strong>AmbAG makes that moment impossible.</strong></p>
+    <div class="foot"><span>AmbAG</span><span>6 / 6</span></div>
+  </section>
+
+</div>
+
+<button class="arrow prev" aria-label="Previous">‹</button>
+<button class="arrow next" aria-label="Next">›</button>
+<div class="nav">← → to move · P to print</div>
+
+<script>
+  const slides = [...document.querySelectorAll(".slide")];
+  let i = 0;
+  const show = (n) => {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle("on", k === i));
+    document.title = `AmbAG — ${i + 1}/${slides.length}`;
+  };
+  document.querySelector(".next").onclick = () => show(i + 1);
+  document.querySelector(".prev").onclick = () => show(i - 1);
+  addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === " ") show(i + 1);
+    if (e.key === "ArrowLeft") show(i - 1);
+    if (e.key.toLowerCase() === "p") print();
+  });
+  document.querySelector("#addr").textContent =
+    localStorage.getItem("ambag.contract") || "CONTRACT ADDRESS";
+</script>
+</body>
+</html>
