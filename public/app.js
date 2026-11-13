@@ -33,6 +33,25 @@ Jose Dela Cruz - 0.10
 Jose Dela Cruz - 0.10
 Ella Garcia - 0.08`;
 
+const STATUS_LABEL = {
+  matched: "Matched",
+  short: "Short",
+  duplicate: "Duplicate",
+  missing: "Missing",
+  unknown: "Unknown"
+};
+
+const REVERT_HINTS = {
+  "closed": "This collection is closed. Payments are no longer accepted.",
+  "released": "Funds were already released. This collection is closed.",
+  "no collection": "Collection not found on this contract.",
+  "target not met": "The target isn't met yet, so release is locked.",
+  "not ended": "The deadline hasn't passed yet, so refunds are locked.",
+  "target met": "The target was met, so refunds are closed.",
+  "nothing to refund": "This wallet has no contribution to refund.",
+  "zero value": "Enter an amount greater than 0."
+};
+
 const state = {
   provider: null,
   signer: null,
@@ -41,6 +60,7 @@ const state = {
   collectionId: 1,
   collection: null,
   contributions: [],
+  vendorBalance: null,
   extraction: null,
   reconciliation: null
 };
@@ -54,36 +74,88 @@ function init() {
     (r) => `<option value="${r.ref}">${r.name} — ${r.expected} tBNB</option>`
   ).join("");
   updateMemberFields();
+  renderEmptyTable();
 
+  $("loadForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    loadCollection();
+  });
   $("connect").addEventListener("click", connectWallet);
-  $("load").addEventListener("click", loadCollection);
-  $("pay").addEventListener("click", pay);
-  $("release").addEventListener("click", release);
-  $("refund").addEventListener("click", claimRefund);
+  $("pay").addEventListener("click", () => {
+    if (!state.signer) {
+      setPayStatus("Connect a wallet to pay.", "warn");
+      connectWallet();
+      return;
+    }
+    pay();
+  });
+  $("release").addEventListener("click", () => {
+    if (!state.signer) {
+      setActionStatus("Connect a wallet first.", "warn");
+      connectWallet();
+      return;
+    }
+    release();
+  });
+  $("refund").addEventListener("click", () => {
+    if (!state.signer) {
+      setActionStatus("Connect a wallet first.", "warn");
+      connectWallet();
+      return;
+    }
+    claimRefund();
+  });
   $("demoList").addEventListener("click", () => {
     $("listText").value = DEMO_TEXT;
+    setAiStatus("Demo list loaded. Ready to extract.", "info");
   });
   $("extract").addEventListener("click", extract);
+  $("copyContract").addEventListener("click", () => {
+    copyText(state.address || $("contract").value.trim(), $("copyContract"));
+  });
   $("memberName").addEventListener("change", updateMemberFields);
+  $("contract").addEventListener("input", () => $("contract").removeAttribute("aria-invalid"));
   $("contract").addEventListener("change", () => localStorage.setItem("ambag.contract", $("contract").value.trim()));
   $("collectionId").addEventListener("change", () => localStorage.setItem("ambag.collectionId", $("collectionId").value));
+
   window.ethereum?.on?.("accountsChanged", async () => {
-    if (!state.provider) return;
-    state.signer = await state.provider.getSigner();
-    const addr = await state.signer.getAddress();
-    $("network").textContent = `Connected ${addr.slice(0, 6)}…${addr.slice(-4)} · chain ${CHAIN_ID}`;
+    if (!state.provider || !state.signer) return;
+    try {
+      state.signer = await state.provider.getSigner();
+      const addr = await state.signer.getAddress();
+      setWalletUI(addr);
+      if (state.address) state.contract = new ethers.Contract(state.address, ABI, state.signer);
+      if (state.collection) renderCollection();
+    } catch {
+      state.signer = null;
+      setWalletUI("");
+      if (state.address) state.contract = new ethers.Contract(state.address, ABI, state.provider);
+      if (state.collection) renderCollection();
+      setStatus("Wallet disconnected. Browsing read-only.", "warn");
+    }
   });
+
+  fetch("/api/health")
+    .then((res) => res.json())
+    .then((health) => {
+      if (health.mock) $("aiMode").textContent = "AI assist · mock";
+    })
+    .catch(() => {});
 }
 
 async function connectWallet() {
+  if (!window.ethereum) {
+    setStatus("No wallet found. Install MetaMask or Trust Wallet to pay.", "error");
+    return;
+  }
+
+  setBusy($("connect"), true);
+  setStatus("Waiting for your wallet…", "info");
   try {
-    if (!window.ethereum) {
-      setStatus("No wallet found. Install MetaMask or Trust Wallet.");
-      return;
-    }
     state.provider = new ethers.BrowserProvider(window.ethereum);
     await state.provider.send("eth_requestAccounts", []);
-    const network = await state.provider.getNetwork();
+
+    let network = await state.provider.getNetwork();
     if (Number(network.chainId) !== CHAIN_ID) {
       try {
         await state.provider.send("wallet_switchEthereumChain", [{ chainId: CHAIN_HEX }]);
@@ -91,44 +163,82 @@ async function connectWallet() {
         if (err?.code === 4902 || err?.data?.originalError?.code === 4902) {
           await state.provider.send("wallet_addEthereumChain", [CHAIN_PARAMS]);
         } else {
-          throw err;
+          throw new Error("Switch to BSC Testnet (chain 97) in your wallet.");
         }
       }
+      state.provider = new ethers.BrowserProvider(window.ethereum);
+      network = await state.provider.getNetwork();
+      if (Number(network.chainId) !== CHAIN_ID) throw new Error("Wrong network. Pick BSC Testnet (chain 97).");
     }
+
     state.signer = await state.provider.getSigner();
     const addr = await state.signer.getAddress();
-    $("network").textContent = `Connected ${addr.slice(0, 6)}…${addr.slice(-4)} · chain ${CHAIN_ID}`;
-    setStatus("Wallet connected.");
+    setWalletUI(addr);
+    setStatus("Wallet connected. You can pay, release, or claim.", "success");
     if ($("contract").value.trim()) await loadCollection();
   } catch (err) {
-    setStatus(`Wallet error: ${shortError(err)}`);
+    setStatus(`Wallet error: ${shortError(err)}`, "error");
+  } finally {
+    setBusy($("connect"), false);
   }
 }
 
 async function loadCollection() {
   const address = $("contract").value.trim();
   const id = Number($("collectionId").value);
+
   if (!ethers.isAddress(address)) {
-    setStatus("Enter a valid contract address.");
+    $("contract").setAttribute("aria-invalid", "true");
+    $("contract").focus();
+    setStatus("Enter a valid contract address.", "error");
     return;
   }
+  if (!Number.isInteger(id) || id < 1) {
+    setStatus("Collection ID must be a whole number of 1 or more.", "error");
+    $("collectionId").focus();
+    return;
+  }
+  $("contract").removeAttribute("aria-invalid");
+
   if (!state.provider) state.provider = new ethers.JsonRpcProvider(CHAIN_PARAMS.rpcUrls[0]);
-  state.address = address;
+  state.address = ethers.getAddress(address);
   state.collectionId = id;
-  localStorage.setItem("ambag.contract", address);
+  state.contract = new ethers.Contract(state.address, ABI, state.signer || state.provider);
+  localStorage.setItem("ambag.contract", state.address);
   localStorage.setItem("ambag.collectionId", String(id));
-  state.contract = new ethers.Contract(address, ABI, state.signer || state.provider);
+
+  setBusy($("load"), true);
+  setActionStatus("");
+  setPayStatus("");
+  setStatus("Reading the collection from BSC Testnet…", "info");
   try {
     await refresh();
-    setStatus(`Loaded collection ${id}.`);
+    setStatus(`Collection #${id} loaded from ${shortAddr(state.address)}.`, "success");
+    reveal($("collectionPanel"));
   } catch (err) {
-    setStatus(`Load failed: ${shortError(err)}`);
+    state.collection = null;
+    state.contributions = [];
+    $("collectionPanel").hidden = true;
+    $("memberPanel").hidden = true;
+    $("treasurerPanel").hidden = true;
+    const message = shortError(err);
+    setStatus(
+      /decode|bad_data/i.test(message)
+        ? "That address doesn't look like an AmbAG contract on BSC Testnet."
+        : `Load failed: ${message}`,
+      "error"
+    );
+  } finally {
+    setBusy($("load"), false);
   }
 }
 
 async function refresh() {
   if (!state.contract) return;
   const c = await state.contract.collections(state.collectionId);
+  if (c.organizer === ethers.ZeroAddress) {
+    throw new Error(`Collection #${state.collectionId} was not found on this contract.`);
+  }
   state.collection = {
     organizer: c.organizer,
     vendor: c.vendor,
@@ -138,9 +248,14 @@ async function refresh() {
     released: c.released
   };
   state.contributions = await state.contract.contributionsOf(state.collectionId);
-  state.vendorBalance = state.provider
-    ? await state.provider.getBalance(state.collection.vendor)
-    : 0n;
+
+  state.vendorBalance = null;
+  try {
+    state.vendorBalance = state.provider ? await state.provider.getBalance(c.vendor) : null;
+  } catch {
+    // balance is a nice-to-have; never block the ledger on it
+  }
+
   renderCollection();
   renderReconciliation();
   $("collectionPanel").hidden = false;
@@ -151,17 +266,58 @@ async function refresh() {
 function renderCollection() {
   const c = state.collection;
   if (!c) return;
-  $("target").textContent = `${fmt(c.target)} tBNB`;
-  $("onchain").textContent = `${fmt(c.totalRaised)} tBNB`;
-  $("deadline").textContent = new Date(Number(c.deadline) * 1000).toLocaleString();
-  $("vendor").textContent = c.vendor;
-  $("vendorBal").textContent = `${fmt(state.vendorBalance ?? 0n)} tBNB`;
+
+  const now = Math.floor(Date.now() / 1000);
+  const ended = now >= Number(c.deadline);
+  const targetMet = c.target > 0n && c.totalRaised >= c.target;
   const pct = c.target > 0n ? Number((c.totalRaised * 10000n) / c.target) / 100 : 0;
-  $("bar").style.width = `${Math.min(pct, 100)}%`;
-  $("bar").classList.toggle("done", c.totalRaised >= c.target);
-  $("progressText").textContent = `${fmt(c.totalRaised)} / ${fmt(c.target)} tBNB (${pct.toFixed(1)}%)${c.released ? " · released" : ""}`;
-  $("release").textContent = c.totalRaised >= c.target ? "Release to vendor" : "Try release (will revert)";
-  $("release").disabled = c.released;
+  const barPct = Math.min(100, Math.max(0, pct));
+
+  $("collectionTitle").textContent = `Collection #${state.collectionId}`;
+  $("target").textContent = fmt(c.target);
+  $("onchain").textContent = fmt(c.totalRaised);
+  $("deadline").textContent = formatDeadline(c.deadline);
+  $("vendor").textContent = c.vendor;
+  $("vendor").title = c.vendor;
+  $("vendorBal").textContent = state.vendorBalance === null ? "—" : `${fmt(state.vendorBalance)} tBNB`;
+
+  $("bar").style.width = `${barPct}%`;
+  $("bar").classList.toggle("done", targetMet);
+  $("progressWrap").setAttribute("aria-valuenow", String(Math.round(barPct)));
+  $("progressWrap").setAttribute(
+    "aria-valuetext",
+    `${fmt(c.totalRaised)} of ${fmt(c.target)} tBNB raised (${pct}%)`
+  );
+  $("progressText").textContent = `${pct}% of target${c.released ? " · released" : ""}`;
+
+  let label = "Open";
+  let tone = "gold";
+  if (c.released) {
+    label = "Released";
+    tone = "success";
+  } else if (targetMet) {
+    label = "Target met";
+    tone = "success";
+  } else if (ended) {
+    label = "Ended";
+    tone = "danger";
+  }
+  $("collectionStatus").textContent = label;
+  $("collectionStatus").dataset.tone = tone;
+
+  $("release").disabled = c.released || !targetMet;
+  $("release").textContent = c.released ? "Released to vendor" : "Release to vendor";
+  $("refund").disabled = c.released || !ended || targetMet;
+  $("pay").disabled = c.released || ended;
+
+  let hint = "Release unlocks when the target is met; refunds unlock after the deadline if it isn't.";
+  if (c.released) hint = "Funds were released to the vendor. This collection is closed.";
+  else if (targetMet) hint = "Target met. Release sends the full raised amount to the vendor.";
+  else if (ended) hint = "Deadline passed and the target was missed. Contributors can claim refunds.";
+  $("actionHint").textContent = hint;
+
+  const explorer = CHAIN_PARAMS.blockExplorerUrls[0];
+  $("explorerLink").href = `${explorer}/address/${state.address}`;
 }
 
 function updateMemberFields() {
@@ -169,47 +325,94 @@ function updateMemberFields() {
   const row = ROSTER.find((r) => r.ref === ref);
   $("memberRef").value = ref;
   $("memberAmount").value = row ? row.expected : "";
+  setPayStatus("");
 }
 
 async function pay() {
+  if (!state.contract || !state.signer) {
+    setPayStatus("Connect a wallet and load a collection first.", "warn");
+    return;
+  }
+
+  const ref = $("memberRef").value.trim();
+  const amount = $("memberAmount").value.trim();
+  if (!ref) {
+    setPayStatus("Pick a member first.", "warn");
+    return;
+  }
+
+  let value;
   try {
-    if (!state.contract || !state.signer) throw new Error("Connect and load first.");
-    const ref = $("memberRef").value.trim();
-    const amount = $("memberAmount").value.trim();
-    if (!ref) throw new Error("Pick a member.");
-    const value = ethers.parseEther(amount);
-    setPayStatus("Sending…");
-    const tx = await state.contract.contribute(state.collectionId, ethers.encodeBytes32String(ref), { value });
-    setPayStatus(`Sent ${tx.hash.slice(0, 10)}… waiting`);
+    value = ethers.parseEther(amount);
+  } catch {
+    setPayStatus("Enter a valid tBNB amount, like 0.10.", "error");
+    $("memberAmount").focus();
+    return;
+  }
+  if (value <= 0n) {
+    setPayStatus("Amount must be greater than 0.", "error");
+    $("memberAmount").focus();
+    return;
+  }
+
+  const c = state.collection;
+  if (c && (c.released || Date.now() / 1000 >= Number(c.deadline))) {
+    setPayStatus("This collection is closed. Payments are no longer accepted.", "error");
+    return;
+  }
+
+  setBusy($("pay"), true);
+  try {
+    setPayStatus("Confirm the payment in your wallet…", "info");
+    const tx = await state.contract.contribute(
+      state.collectionId,
+      ethers.encodeBytes32String(ref),
+      { value }
+    );
+    setPayStatus(`Sent ${tx.hash.slice(0, 10)}… waiting for confirmation…`, "info");
     await tx.wait();
-    setPayStatus("Paid. Refreshing…");
     await refresh();
-    setPayStatus("Paid.");
+    setPayStatus(`Paid ${fmt(value)} tBNB for ${ref}. The ledger is updated.`, "success");
   } catch (err) {
-    setPayStatus(`Error: ${shortError(err)}`);
+    setPayStatus(`Payment failed: ${shortError(err)}`, "error");
+  } finally {
+    setBusy($("pay"), false);
+    if (state.collection) renderCollection();
   }
 }
 
 async function extract() {
   const text = $("listText").value.trim();
   if (!text) {
-    setAiStatus("Paste a list first.");
+    setAiStatus("Paste a payment list first.", "warn");
+    $("listText").focus();
     return;
   }
-  setAiStatus("Extracting…");
+
+  setBusy($("extract"), true);
+  setAiStatus("Reading the list…", "info");
   try {
     const res = await fetch("/api/extract", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text })
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
     state.extraction = data;
-    setAiStatus(`Extracted ${data.rows.length} rows${data.mock ? " (mock)" : ""}.`);
+    const count = data.rows?.length ?? 0;
+    const mock = data.mock ? " (mock AI)" : "";
+    if (state.collection) {
+      setAiStatus(`Extracted ${count} row${count === 1 ? "" : "s"}${mock}. Check the flags below.`, "success");
+    } else {
+      setAiStatus(`Extracted ${count} row${count === 1 ? "" : "s"}${mock}. Load a collection to reconcile.`, "warn");
+    }
     renderReconciliation();
   } catch (err) {
-    setAiStatus(`Error: ${shortError(err)}`);
+    setAiStatus(`Extraction failed: ${shortError(err)}`, "error");
+  } finally {
+    setBusy($("extract"), false);
   }
 }
 
@@ -228,27 +431,43 @@ function reconcile() {
 function renderReconciliation() {
   const rec = reconcile();
   state.reconciliation = rec;
-  const tbody = $("reconTable").querySelector("tbody");
+  const table = $("reconTable");
+  const tbody = table.querySelector("tbody");
   tbody.innerHTML = "";
+
   if (!rec) {
-    $("reconStatus").textContent = "No extraction yet.";
+    renderEmptyTable(
+      state.extraction ? "Collection not loaded" : "No rows yet",
+      state.extraction
+        ? "Load a collection so the list can be matched against the chain."
+        : "Paste the payment list and extract with AI."
+    );
+    $("reconStatus").textContent = state.extraction ? "Load a collection to reconcile." : "No extraction yet.";
+    delete $("reconStatus").dataset.tone;
     return;
   }
 
+  table.hidden = false;
+  const empty = $("reconEmpty");
+  if (empty) empty.hidden = true;
+
   for (const r of rec.rows) {
     const tr = document.createElement("tr");
-    tr.className = r.status;
-    const topUp = r.status === "short"
-      ? `<button class="mini" data-ref="${escapeHtml(r.ref)}" data-amount="${fmt(r.missing)}">Top up</button>`
-      : "";
+    tr.className = `row-${r.status}`;
+
+    const topUp =
+      (r.status === "short" || r.status === "missing") && r.missing > 0n
+        ? `<button class="btn btn-mini" type="button" data-ref="${escapeHtml(r.ref)}" data-amount="${fmt(r.missing)}" aria-label="Top up ${escapeHtml(r.name)}">Top up</button>`
+        : "";
+
     tr.innerHTML = `
       <td>${escapeHtml(r.name)}</td>
-      <td>${escapeHtml(r.amount_tbnb)}</td>
-      <td>${escapeHtml(r.ref)}</td>
-      <td>${fmt(r.actual)}</td>
-      <td><span class="badge ${r.status}">${r.status}</span></td>
-      <td>${r.status === "short" ? `short ${fmt(r.missing)}` : escapeHtml(r.note || "")}</td>
-      <td>${topUp}</td>
+      <td class="num">${escapeHtml(r.amount_tbnb)}</td>
+      <td class="mono">${escapeHtml(r.ref)}</td>
+      <td class="num">${fmt(r.actual)}</td>
+      <td><span class="badge ${r.status}">${STATUS_LABEL[r.status] || r.status}</span></td>
+      <td>${noteFor(r)}</td>
+      <td class="num">${topUp}</td>
     `;
     tbody.appendChild(tr);
   }
@@ -258,51 +477,194 @@ function renderReconciliation() {
   $("onchainTotal").textContent = `${fmt(rec.onchainTotal)} tBNB`;
   $("gapTotal").textContent = `${fmt(rec.gap)} tBNB`;
   $("flagCount").textContent = String(rec.flags);
-  $("reconStatus").textContent = rec.flags
-    ? `${rec.flags} flag(s). The list says ${fmt(rec.listTotal)}; the chain says ${fmt(rec.onchainTotal)}.`
-    : "All rows matched.";
 
-  tbody.querySelectorAll("button.mini").forEach((btn) => {
+  if (rec.flags) {
+    setMessage(
+      $("reconStatus"),
+      `${rec.flags} flag${rec.flags === 1 ? "" : "s"} · list says ${fmt(rec.listTotal)} tBNB, chain says ${fmt(rec.onchainTotal)} tBNB.`,
+      "warn"
+    );
+  } else {
+    setMessage($("reconStatus"), "All rows matched. The list agrees with the chain.", "success");
+  }
+
+  tbody.querySelectorAll("button[data-ref]").forEach((btn) => {
     btn.addEventListener("click", () => {
       $("memberName").value = btn.dataset.ref;
       updateMemberFields();
       $("memberAmount").value = btn.dataset.amount;
-      $("memberPanel").scrollIntoView({ behavior: "smooth", block: "center" });
+      reveal($("memberPanel"), "center");
       $("pay").focus();
-      setPayStatus(`Connect the member's wallet, then pay ${btn.dataset.amount} tBNB.`);
+      setPayStatus(`Top up ${btn.dataset.amount} tBNB with the member's wallet.`, "warn");
     });
   });
 }
 
+function renderEmptyTable(title = "No rows yet", text = "Paste the payment list and extract with AI.") {
+  const table = $("reconTable");
+  table.hidden = true;
+  let empty = $("reconEmpty");
+  if (!empty) {
+    empty = document.createElement("div");
+    empty.id = "reconEmpty";
+    empty.className = "empty-state";
+    table.after(empty);
+  }
+  empty.hidden = false;
+  empty.innerHTML = `
+    <span class="empty-icon"><svg class="icon" aria-hidden="true"><use href="#i-document" /></svg></span>
+    <strong>${escapeHtml(title)}</strong>
+    <span>${escapeHtml(text)}</span>
+  `;
+}
+
+function noteFor(r) {
+  if (r.status === "short") return `short ${fmt(r.missing)} tBNB`;
+  if (r.status === "duplicate") return "duplicate row in the list";
+  if (r.status === "missing") return r.note ? escapeHtml(r.note) : "no payment found";
+  if (r.status === "matched") return r.note ? escapeHtml(r.note) : "paid in full";
+  return r.note ? escapeHtml(r.note) : "not on the roster";
+}
+
 async function release() {
+  if (!state.contract || !state.signer) {
+    setActionStatus("Connect a wallet and load a collection first.", "warn");
+    return;
+  }
+
+  setBusy($("release"), true);
   try {
-    if (!state.contract || !state.signer) throw new Error("Connect and load first.");
-    setStatus("Calling release…");
+    setActionStatus("Confirm the release in your wallet…", "info");
     const tx = await state.contract.release(state.collectionId);
+    setActionStatus(`Release sent ${tx.hash.slice(0, 10)}… waiting for confirmation…`, "info");
     await tx.wait();
-    setStatus("Released. Vendor paid.");
     await refresh();
+    setActionStatus("Released. The vendor has been paid.", "success");
   } catch (err) {
-    setStatus(`Release reverted: ${shortError(err)}`);
+    setActionStatus(`Release failed: ${shortError(err)}`, "error");
+  } finally {
+    setBusy($("release"), false);
+    if (state.collection) renderCollection();
   }
 }
 
 async function claimRefund() {
+  if (!state.contract || !state.signer) {
+    setActionStatus("Connect a wallet and load a collection first.", "warn");
+    return;
+  }
+
+  setBusy($("refund"), true);
   try {
-    if (!state.contract || !state.signer) throw new Error("Connect and load first.");
-    setStatus("Calling claimRefund…");
+    setActionStatus("Confirm the refund claim in your wallet…", "info");
     const tx = await state.contract.claimRefund(state.collectionId);
+    setActionStatus(`Refund sent ${tx.hash.slice(0, 10)}… waiting for confirmation…`, "info");
     await tx.wait();
-    setStatus("Refund claimed.");
     await refresh();
+    setActionStatus("Refund claimed. The tBNB is back in your wallet.", "success");
   } catch (err) {
-    setStatus(`Refund reverted: ${shortError(err)}`);
+    setActionStatus(`Refund failed: ${shortError(err)}`, "error");
+  } finally {
+    setBusy($("refund"), false);
+    if (state.collection) renderCollection();
   }
 }
 
-function setStatus(msg) { $("status").textContent = msg; }
-function setPayStatus(msg) { $("payStatus").textContent = msg; }
-function setAiStatus(msg) { $("aiStatus").textContent = msg; }
+function setStatus(message, tone = "info") {
+  setMessage($("status"), message, tone);
+}
+
+function setPayStatus(message, tone = "info") {
+  setMessage($("payStatus"), message, tone);
+}
+
+function setAiStatus(message, tone = "info") {
+  setMessage($("aiStatus"), message, tone);
+}
+
+function setActionStatus(message, tone = "info") {
+  setMessage($("actionStatus"), message, tone);
+}
+
+function setMessage(el, message, tone) {
+  el.textContent = message;
+  if (message) el.dataset.tone = tone;
+  else delete el.dataset.tone;
+}
+
+function setBusy(btn, busy) {
+  btn.classList.toggle("is-busy", busy);
+  btn.disabled = busy;
+  btn.setAttribute("aria-busy", busy ? "true" : "false");
+}
+
+function setWalletUI(addr) {
+  const chip = $("networkChip");
+  const button = $("connect");
+  if (addr) {
+    $("network").textContent = "BSC Testnet · connected";
+    $("connectLabel").textContent = shortAddr(addr);
+    button.title = addr;
+    button.setAttribute("aria-label", `Wallet connected: ${addr}`);
+    chip.dataset.state = "connected";
+  } else {
+    $("network").textContent = "BSC Testnet · read-only";
+    $("connectLabel").textContent = "Connect wallet";
+    button.removeAttribute("title");
+    button.setAttribute("aria-label", "Connect wallet");
+    chip.dataset.state = "readonly";
+  }
+}
+
+async function copyText(text, btn) {
+  if (!text) {
+    setStatus("Nothing to copy yet.", "warn");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    setStatus("Contract address copied.", "success");
+    if (btn) {
+      btn.title = "Copied!";
+      setTimeout(() => {
+        btn.title = "Copy contract address";
+      }, 1500);
+    }
+  } catch {
+    setStatus("Copy failed. Select the address and copy it manually.", "error");
+  }
+}
+
+function formatDeadline(deadline) {
+  const ts = Number(deadline);
+  if (!ts) return "—";
+  const date = new Date(ts * 1000);
+  const exact = date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+  const diff = ts - Math.floor(Date.now() / 1000);
+  if (diff <= 0) return `Ended ${exact}`;
+  const days = Math.floor(diff / 86400);
+  const hours = Math.floor((diff % 86400) / 3600);
+  const mins = Math.floor((diff % 3600) / 60);
+  const rel = days > 0 ? `${days}d ${hours}h` : hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  return `Ends in ${rel} · ${exact}`;
+}
+
+function shortAddr(addr) {
+  return addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : "";
+}
+
+function reveal(el, block = "start") {
+  el.scrollIntoView({ behavior: matchesReducedMotion() ? "auto" : "smooth", block });
+}
+
+function matchesReducedMotion() {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
 
 function fmt(v) {
   const s = ethers.formatEther(v);
@@ -320,13 +682,19 @@ function escapeHtml(s) {
 }
 
 function shortError(err) {
+  if (err?.code === "ACTION_REJECTED" || err?.code === 4001) return "Request rejected in wallet.";
   const revert = err?.revert?.args?.[0] ?? err?.reason;
-  if (typeof revert === "string" && revert) return revert;
+  if (typeof revert === "string" && revert) return hintFor(revert);
   const raw = [err?.shortMessage, err?.reason, err?.message, err?.info?.error?.message]
     .filter(Boolean)
     .join(" | ");
   const match = raw.match(/revert(?:ed)?:?\s*"?([^"|\n]+)"?/i);
-  return match ? match[1].trim() : raw || String(err);
+  return hintFor(match ? match[1].trim() : raw || String(err));
+}
+
+function hintFor(message) {
+  const text = String(message).trim();
+  return (REVERT_HINTS[text.toLowerCase()] || text).slice(0, 220);
 }
 
 init();

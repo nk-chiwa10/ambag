@@ -3,95 +3,309 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b1220" />
+  <meta name="description" content="AmbAG — a transparent group-buy collection ledger for student orgs on BSC Testnet." />
   <title>AmbAG — group-buy collection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <header>
-    <div class="brand">AmbAG</div>
-    <div class="network" id="network">Not connected</div>
+  <svg class="svg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-link" viewBox="0 0 24 24">
+      <path d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+    </symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24">
+      <path d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" />
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24">
+      <path d="m4.5 12.75 6 6 9-13.5" />
+    </symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24">
+      <path d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+    </symbol>
+    <symbol id="i-external" viewBox="0 0 24 24">
+      <path d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24">
+      <path d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+    </symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24">
+      <path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+    </symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24">
+      <path d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    </symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24">
+      <path d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24">
+      <path d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+    </symbol>
+    <symbol id="i-document" viewBox="0 0 24 24">
+      <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+    </symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24">
+      <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+    </symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="/" aria-label="AmbAG home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg class="icon"><use href="#i-link" /></svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-name">AmbAG</span>
+          <span class="brand-sub">Group-buy ledger</span>
+        </span>
+      </a>
+
+      <div class="header-actions">
+        <a class="text-link deck-link" href="/deck.html">Pitch deck</a>
+        <div class="network-chip" id="networkChip" data-state="readonly" title="Network status">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="network">BSC Testnet · read-only</span>
+        </div>
+        <button id="connect" class="btn btn-ghost" type="button">
+          <svg class="icon" aria-hidden="true"><use href="#i-wallet" /></svg>
+          <span id="connectLabel">Connect wallet</span>
+        </button>
+      </div>
+    </div>
   </header>
 
-  <main>
-    <section class="panel">
-      <h1>One link. One target. One rule.</h1>
-      <p class="sub">Group-buy collection for student orgs. BSC Testnet only.</p>
-      <div class="row">
-        <label class="grow">Contract address
-          <input id="contract" placeholder="0x..." autocomplete="off" />
-        </label>
-        <label class="narrow">Collection ID
-          <input id="collectionId" type="number" value="1" min="1" />
-        </label>
-        <button id="connect">Connect wallet</button>
-        <button id="load" class="primary">Load collection</button>
+  <main id="main" class="shell" tabindex="-1">
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span>BSC Testnet · chain 97</p>
+        <h1 id="heroTitle">One link. One target.<br /><span class="accent">One rule.</span></h1>
+        <p class="lead">Group-buy collection for student orgs. Members pay in tBNB, the contract holds the money, and AI reconciles the treasurer's list against the chain.</p>
+        <ul class="hero-points">
+          <li>
+            <span class="point-icon"><svg class="icon" aria-hidden="true"><use href="#i-check" /></svg></span>
+            <span><strong>Live total.</strong> Every contribution is recorded on-chain, not in a spreadsheet.</span>
+          </li>
+          <li>
+            <span class="point-icon"><svg class="icon" aria-hidden="true"><use href="#i-shield" /></svg></span>
+            <span><strong>Refund rule.</strong> If the target isn't met by the deadline, contributors can claim refunds.</span>
+          </li>
+          <li>
+            <span class="point-icon"><svg class="icon" aria-hidden="true"><use href="#i-sparkles" /></svg></span>
+            <span><strong>Reconciled list.</strong> Duplicates and short payments are flagged before payout.</span>
+          </li>
+        </ul>
       </div>
-      <div class="status" id="status">Paste the contract address to view the ledger, or connect a wallet to pay.</div>
+
+      <aside class="panel setup-panel" aria-labelledby="setupTitle">
+        <div class="panel-head">
+          <div>
+            <p class="kicker">Open a collection</p>
+            <h2 id="setupTitle">Load the ledger</h2>
+          </div>
+          <span class="pill">Read-only OK</span>
+        </div>
+
+        <form id="loadForm" class="form-grid" novalidate>
+          <label class="field field-wide">
+            <span class="field-label">Contract address</span>
+            <span class="input-shell">
+              <svg class="icon input-icon" aria-hidden="true"><use href="#i-document" /></svg>
+              <input id="contract" name="contract" placeholder="0x…" autocomplete="off" spellcheck="false" aria-describedby="contractHint" />
+            </span>
+            <span class="field-hint" id="contractHint">The deployed AmbAG contract on BSC Testnet.</span>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Collection ID</span>
+            <input id="collectionId" name="collectionId" type="number" value="1" min="1" inputmode="numeric" />
+          </label>
+
+          <button id="load" class="btn btn-primary" type="submit">
+            <svg class="icon" aria-hidden="true"><use href="#i-arrow-right" /></svg>
+            Load collection
+          </button>
+        </form>
+
+        <div class="status" id="status" role="status" aria-live="polite">Paste the contract address to view the ledger, or connect a wallet to pay.</div>
+
+        <div class="setup-note">
+          <svg class="icon" aria-hidden="true"><use href="#i-info" /></svg>
+          <span>No wallet needed to browse. Connect only when you're ready to pay or release.</span>
+        </div>
+      </aside>
     </section>
 
-    <section class="panel" id="collectionPanel" hidden>
-      <div class="stats">
-        <div><div class="label">Target</div><div class="value" id="target">—</div></div>
-        <div><div class="label">On-chain</div><div class="value" id="onchain">—</div></div>
-        <div><div class="label">Deadline</div><div class="value" id="deadline">—</div></div>
-        <div><div class="label">Vendor balance</div><div class="value" id="vendorBal">—</div></div>
-        <div class="grow"><div class="label">Vendor</div><div class="value small" id="vendor">—</div></div>
+    <section id="collectionPanel" class="collection" hidden aria-labelledby="collectionTitle">
+      <div class="section-head">
+        <div>
+          <p class="kicker">On-chain record</p>
+          <h2 id="collectionTitle">Collection</h2>
+        </div>
+        <div class="head-meta">
+          <span class="pill" id="collectionStatus" data-tone="gold">Open</span>
+          <button id="copyContract" class="icon-btn" type="button" aria-label="Copy contract address" title="Copy contract address">
+            <svg class="icon" aria-hidden="true"><use href="#i-copy" /></svg>
+          </button>
+          <a id="explorerLink" class="text-link" href="https://testnet.bscscan.com" target="_blank" rel="noreferrer">
+            BscScan
+            <svg class="icon" aria-hidden="true"><use href="#i-external" /></svg>
+          </a>
+        </div>
       </div>
-      <div class="progress"><div class="bar" id="bar"></div></div>
-      <div class="row space">
-        <div class="status" id="progressText">—</div>
-        <div class="row">
-          <button id="release" class="primary">Try release</button>
-          <button id="refund">Claim refund</button>
+
+      <div class="overview-grid">
+        <article class="panel progress-card">
+          <div class="progress-top">
+            <div>
+              <p class="label">Raised on-chain</p>
+              <p class="hero-number"><span id="onchain">—</span><span class="unit">tBNB</span></p>
+            </div>
+            <div class="target-block">
+              <p class="label">Target</p>
+              <p class="target-value"><span id="target">—</span><span class="unit">tBNB</span></p>
+            </div>
+          </div>
+
+          <div class="progress" id="progressWrap" role="progressbar" aria-label="Collection progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="bar" id="bar"></div>
+          </div>
+
+          <div class="progress-foot">
+            <span id="progressText">—</span>
+            <span class="deadline">
+              <svg class="icon" aria-hidden="true"><use href="#i-clock" /></svg>
+              <span id="deadline">—</span>
+            </span>
+          </div>
+
+          <div class="stat-row">
+            <div>
+              <span class="label">Vendor balance</span>
+              <span class="stat-value" id="vendorBal">—</span>
+            </div>
+            <div class="vendor-cell">
+              <span class="label">Vendor</span>
+              <span class="mono" id="vendor">—</span>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button id="release" class="btn btn-primary" type="button" aria-describedby="actionHint">Release to vendor</button>
+            <button id="refund" class="btn" type="button" aria-describedby="actionHint">Claim refund</button>
+            <p class="hint" id="actionHint">Release unlocks when the target is met; refunds unlock after the deadline if it isn't.</p>
+          </div>
+          <div class="status" id="actionStatus" role="status" aria-live="polite"></div>
+        </article>
+
+        <aside class="panel pay-card" id="memberPanel" hidden aria-labelledby="memberTitle">
+          <div class="panel-head">
+            <div>
+              <p class="kicker">Member</p>
+              <h2 id="memberTitle">Pay your share</h2>
+            </div>
+            <span class="pill pill-gold">tBNB</span>
+          </div>
+          <p class="sub">The name stays off-chain. Only the reference goes on-chain.</p>
+
+          <label class="field">
+            <span class="field-label">Name</span>
+            <select id="memberName"></select>
+          </label>
+
+          <div class="two-col">
+            <label class="field">
+              <span class="field-label">Reference</span>
+              <input id="memberRef" readonly />
+            </label>
+            <label class="field">
+              <span class="field-label">Amount (tBNB)</span>
+              <input id="memberAmount" type="text" inputmode="decimal" />
+            </label>
+          </div>
+
+          <button id="pay" class="btn btn-primary btn-block" type="button">Pay with wallet</button>
+          <div class="status" id="payStatus" role="status" aria-live="polite"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="panel treasury" id="treasurerPanel" hidden aria-labelledby="treasurerTitle">
+      <div class="panel-head">
+        <div>
+          <p class="kicker">Treasurer tools</p>
+          <h2 id="treasurerTitle">Reconcile the payment list</h2>
+        </div>
+        <span class="pill pill-ai">
+          <svg class="icon" aria-hidden="true"><use href="#i-sparkles" /></svg>
+          <span id="aiMode">AI assist</span>
+        </span>
+      </div>
+      <p class="sub">Paste the messy list. The AI transcribes it; the app matches every row to the on-chain record and flags the gaps.</p>
+
+      <div class="treasury-grid">
+        <div class="composer">
+          <label class="field">
+            <span class="field-label">Payment list</span>
+            <textarea id="listText" rows="7" placeholder="Maria Santos - 0.10&#10;Jose Dela Cruz - 0.10&#10;Ella Garcia - 0.08" spellcheck="false"></textarea>
+          </label>
+
+          <div class="composer-actions">
+            <button id="demoList" class="btn" type="button">Load demo list</button>
+            <button id="extract" class="btn btn-primary" type="button">
+              <svg class="icon" aria-hidden="true"><use href="#i-sparkles" /></svg>
+              Extract with AI
+            </button>
+          </div>
+          <div class="status" id="aiStatus" role="status" aria-live="polite"></div>
+
+          <div class="summary" aria-label="Reconciliation summary">
+            <div class="summary-item"><span class="label">List total</span><strong id="listTotal">—</strong></div>
+            <div class="summary-item"><span class="label">Expected</span><strong id="expectedTotal">—</strong></div>
+            <div class="summary-item"><span class="label">On-chain</span><strong id="onchainTotal">—</strong></div>
+            <div class="summary-item"><span class="label">Gap</span><strong id="gapTotal">—</strong></div>
+            <div class="summary-item"><span class="label">Flags</span><strong id="flagCount">—</strong></div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-head">
+            <h3>Reconciliation</h3>
+            <span class="status status-inline" id="reconStatus" role="status" aria-live="polite">No extraction yet.</span>
+          </div>
+          <div class="table-wrap">
+            <table id="reconTable">
+              <caption class="sr-only">Treasurer list matched against on-chain contributions</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Amount (tBNB)</th>
+                  <th scope="col">Ref</th>
+                  <th scope="col">On-chain (tBNB)</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Note</th>
+                  <th scope="col"><span class="sr-only">Action</span></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
-
-    <section class="panel" id="memberPanel" hidden>
-      <h2>Member view</h2>
-      <p class="sub">Pay with tBNB. The name stays off-chain; the reference goes on-chain. Connect the member's wallet before paying.</p>
-      <div class="row">
-        <label class="grow">Name
-          <select id="memberName"></select>
-        </label>
-        <label class="narrow">Reference
-          <input id="memberRef" readonly />
-        </label>
-        <label class="narrow">Amount (tBNB)
-          <input id="memberAmount" type="text" inputmode="decimal" />
-        </label>
-        <button id="pay" class="primary">Pay</button>
-      </div>
-      <div class="status" id="payStatus"></div>
-    </section>
-
-    <section class="panel" id="treasurerPanel" hidden>
-      <h2>Treasurer view</h2>
-      <p class="sub">Paste the messy payment list. The AI transcribes; the app matches it to the chain.</p>
-      <textarea id="listText" rows="7" placeholder="Maria Santos - 0.10&#10;Jose Dela Cruz - 0.10&#10;Ella Garcia - 0.08"></textarea>
-      <div class="row">
-        <button id="demoList">Load demo list</button>
-        <button id="extract" class="primary">Extract with AI</button>
-        <span class="status" id="aiStatus"></span>
-      </div>
-      <div class="summary">
-        <div><span class="label">List total</span> <strong id="listTotal">—</strong></div>
-        <div><span class="label">Expected</span> <strong id="expectedTotal">—</strong></div>
-        <div><span class="label">On-chain</span> <strong id="onchainTotal">—</strong></div>
-        <div><span class="label">Gap</span> <strong id="gapTotal">—</strong></div>
-        <div><span class="label">Flags</span> <strong id="flagCount">—</strong></div>
-      </div>
-      <div class="table-wrap">
-        <table id="reconTable">
-          <thead>
-            <tr><th>Name</th><th>Amount</th><th>Ref</th><th>On-chain</th><th>Status</th><th>Note</th><th></th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="status" id="reconStatus">No extraction yet.</div>
-    </section>
   </main>
+
+  <footer class="site-footer shell">
+    <span>AmbAG · BCC 2026 Build Day</span>
+    <span class="footer-links">
+      <a class="text-link" href="https://github.com/nk-chiwa10/ambag" target="_blank" rel="noreferrer">GitHub</a>
+      <span>Testnet only · no real funds</span>
+    </span>
+  </footer>
 
   <script src="/vendor/ethers.umd.min.js"></script>
   <script type="module" src="/app.js"></script>

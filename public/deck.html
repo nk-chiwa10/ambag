@@ -4,11 +4,15 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>AmbAG — BCC 2026 Build Day</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
-  :root { --ink:#0f141a; --muted:#5d6673; --line:#e2e6ec; --accent:#0b7a4b; --warn:#b42318; --paper:#fff; }
+  :root { --ink:#0f141a; --muted:#5d6673; --line:#e2e6ec; --accent:#a16207; --accent-soft:#fef3c7; --warn:#b42318; --paper:#fff; --bg:#0b1220; }
   * { box-sizing:border-box; }
   html,body { margin:0; height:100%; }
-  body { font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--ink); background:#0d1117; }
+  body { font-family:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--ink); background:var(--bg); }
+  ::selection { color:#1a1205; background:#f5b843; }
   .deck { height:100vh; display:flex; align-items:center; justify-content:center; }
   .slide { display:none; width:min(1100px,92vw); height:min(660px,88vh); background:var(--paper); border-radius:16px; padding:56px 64px; flex-direction:column; justify-content:center; position:relative; }
   .slide.on { display:flex; }
@@ -27,11 +31,13 @@
   .card .val { font-size:26px; font-weight:700; }
   .bad { color:var(--warn); }
   .good { color:var(--accent); }
-  .mono { font-family:ui-monospace,Consolas,monospace; font-size:15px; }
-  .foot { position:absolute; left:64px; right:64px; bottom:22px; display:flex; justify-content:space-between; font-size:12px; color:#9aa3af; }
-  .tag { display:inline-block; padding:3px 10px; border-radius:999px; background:#e8f5ee; color:var(--accent); font-size:12px; font-weight:700; }
-  .nav { position:fixed; bottom:16px; right:18px; color:#9aa3af; font-size:12px; }
-  .arrow { position:fixed; top:50%; transform:translateY(-50%); background:none; border:0; color:#7d8794; font-size:34px; cursor:pointer; padding:12px; }
+  .mono { font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace; font-size:15px; }
+  .foot { position:absolute; left:64px; right:64px; bottom:22px; display:flex; justify-content:space-between; font-size:12px; color:#7c8ba1; }
+  .tag { display:inline-block; padding:3px 10px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:12px; font-weight:700; }
+  .nav { position:fixed; bottom:16px; right:18px; color:#7c8ba1; font-size:12px; }
+  .arrow { position:fixed; top:50%; transform:translateY(-50%); background:none; border:0; color:#9aa8bc; font-size:34px; cursor:pointer; padding:12px; border-radius:8px; }
+  .arrow:hover { color:#f5b843; }
+  .arrow:focus-visible { outline:2px solid #f5b843; outline-offset:2px; }
   .arrow.prev { left:8px; } .arrow.next { right:8px; }
   @media print {
     @page { size: 297mm 167mm; margin:0; }
