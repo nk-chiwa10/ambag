@@ -32,7 +32,7 @@ async function main() {
   if (!DEPLOYER_KEY) throw new Error("Set DEPLOYER_KEY in .env");
   if (MEMBER_KEYS.length < 3) throw new Error("Set at least 3 comma-separated MEMBER_KEYS in .env");
 
-  const provider = new ethers.JsonRpcProvider(RPC_URL);
+  const provider = new ethers.JsonRpcProvider(RPC_URL, undefined, { cacheTimeout: -1 });
   const organizer = new ethers.Wallet(DEPLOYER_KEY, provider);
   const vendor = VENDOR_ADDRESS && ethers.isAddress(VENDOR_ADDRESS) ? VENDOR_ADDRESS : organizer.address;
   if (!VENDOR_ADDRESS) console.warn("VENDOR_ADDRESS not set; using the organizer address as vendor.");
@@ -81,6 +81,14 @@ async function main() {
     { value: ethers.parseEther("0.02") }
   );
   await tx3.wait();
+
+  // A local node's block clock drifts behind wall time, so a 2-minute deadline can stay
+  // "not ended" for minutes. Push the chain past it after the payment, not before.
+  if (/^https?:\/\/(127\.0\.0\.1|localhost)/i.test(RPC_URL)) {
+    await provider.send("evm_increaseTime", [3 * 60]);
+    await provider.send("evm_mine", []);
+    console.log("Local chain: advanced 3 minutes so the failed collection is refundable now.");
+  }
 
   const happy = await contract.collections(happyId);
   const failed = await contract.collections(failedId);

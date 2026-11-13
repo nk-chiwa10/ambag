@@ -7,7 +7,7 @@ dotenv.config();
 
 const ENV = path.join(process.cwd(), ".env");
 const RPC_URL = process.env.RPC_URL || "https://data-seed-prebsc-1-s1.bnbchain.org:8545";
-const FUND_EACH = ethers.parseEther(process.env.FUND_EACH || "0.12");
+const FUND_EACH = ethers.parseEther(process.env.FUND_EACH || "0.15");
 
 function setEnv(key, value) {
   const line = `${key}=${value}`;
@@ -21,7 +21,7 @@ async function main() {
   const deployerKey = (process.env.DEPLOYER_KEY || "").trim();
   if (!deployerKey) throw new Error("No DEPLOYER_KEY in .env. Run npm run deploy first or paste a funded key.");
 
-  const provider = new ethers.JsonRpcProvider(RPC_URL);
+  const provider = new ethers.JsonRpcProvider(RPC_URL, undefined, { cacheTimeout: -1 });
   const deployer = new ethers.Wallet(deployerKey, provider);
 
   let keys = (process.env.MEMBER_KEYS || "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -60,7 +60,8 @@ async function main() {
       console.log(`${m.address} already has ${ethers.formatEther(current)} tBNB, skipping`);
       continue;
     }
-    const tx = await deployer.sendTransaction({ to: m.address, value: FUND_EACH - current });
+    const nonce = Number(await provider.send("eth_getTransactionCount", [deployer.address, "pending"]));
+    const tx = await deployer.sendTransaction({ to: m.address, value: FUND_EACH - current, nonce });
     await tx.wait();
     console.log(`funded ${m.address} with ${ethers.formatEther(FUND_EACH)} tBNB`);
   }
