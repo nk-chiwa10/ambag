@@ -11,6 +11,7 @@ One link. One target. One rule. Members pay in tBNB on BSC Testnet. The AI trans
 - `public/` — the member link and treasurer dashboard.
 - `public/deck.html` — the 6-slide pitch deck. Open `/deck.html`, arrow keys to move, `P` to print to PDF.
 - `scripts/seed.js` — creates the happy and failed collections and pre-seeds the demo payments.
+- `scripts/localnet.js` — local BSC-compatible node for the online-participant fallback.
 - `npm run inspect` — read-only chain dump: collections, references, contributions, vendor balance. No key required.
 - `concepts_brief.md` — the brainstorm decisions and demo script.
 
@@ -59,7 +60,7 @@ Any OpenAI-compatible endpoint works. For Gemini, point `OPENAI_BASE_URL` at `ht
 ## Status
 
 - Contract: compiles; local EVM tests pass (`npm run selftest`).
-- Chain: **not deployed yet** — see `docs/deploy-log.md`.
+- Chain: deployed on the local fallback node (chain `31337`) at `0x8D03157bAe4E1e61877cc19466522a0cE6E413BC`. **Not** deployed on BSC Testnet 97 and **not** BscScan-verified — the faucet needs mainnet BNB. See `docs/deploy-log.md`.
 - AI: mock mode; live path untested until a key is present.
 - Deck: `public/deck.html`.
 
@@ -73,6 +74,25 @@ npm run deploy
 The script compiles with solc `0.8.19` (optimizer on, 200 runs, EVM `paris`), deploys to chain 97 from `DEPLOYER_KEY`, writes `CONTRACT_ADDRESS` to `.env`, and saves `build/AmbAG.artifact.json`. With an empty `DEPLOYER_KEY` it generates a throwaway wallet and prints the address to fund.
 
 Verify on `https://testnet.bscscan.com/verifyContract` using the same compiler settings.
+
+### Local fallback (online participants)
+
+The BSC faucet needs 0.002 BNB on mainnet. When that is unavailable, the organizer recommends simulating the testnet RPC with a local node:
+
+```bash
+npm run localnet   # leave this window open
+```
+
+It starts a BSC-compatible chain on `http://127.0.0.1:8545`, chain ID `31337`, and funds `DEPLOYER_KEY` with 1000 tBNB. Set these in `.env`:
+
+```
+RPC_URL=http://127.0.0.1:8545
+CHAIN_ID=31337
+```
+
+Then run `deploy`, `wallets`, `seed`, and `inspect` exactly as below. In MetaMask add a network manually: name `BSC Local (demo)`, RPC `http://127.0.0.1:8545`, chain ID `31337`, symbol `tBNB`.
+
+A local chain cannot be verified on BscScan. Say that plainly in the pitch; do not present it as a testnet deployment.
 
 ## 2. Configure
 
