@@ -1,0 +1,19 @@
+{
+  "name": "ambag",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "deploy": "node scripts/deploy.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.4",
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "solc": "^0.8.19"
+  }
+}

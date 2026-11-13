@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AmbAG — group-buy collection</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">AmbAG</div>
+    <div class="network" id="network">Not connected</div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h1>One link. One target. One rule.</h1>
+      <p class="sub">Group-buy collection for student orgs. BSC Testnet only.</p>
+      <div class="row">
+        <label class="grow">Contract address
+          <input id="contract" placeholder="0x..." autocomplete="off" />
+        </label>
+        <label class="narrow">Collection ID
+          <input id="collectionId" type="number" value="1" min="1" />
+        </label>
+        <button id="connect">Connect wallet</button>
+        <button id="load" class="primary">Load collection</button>
+      </div>
+      <div class="status" id="status">Connect a wallet on BSC Testnet (chain 97).</div>
+    </section>
+
+    <section class="panel" id="collectionPanel" hidden>
+      <div class="stats">
+        <div><div class="label">Target</div><div class="value" id="target">—</div></div>
+        <div><div class="label">On-chain</div><div class="value" id="onchain">—</div></div>
+        <div><div class="label">Deadline</div><div class="value" id="deadline">—</div></div>
+        <div class="grow"><div class="label">Vendor</div><div class="value small" id="vendor">—</div></div>
+      </div>
+      <div class="progress"><div class="bar" id="bar"></div></div>
+      <div class="row space">
+        <div class="status" id="progressText">—</div>
+        <div class="row">
+          <button id="release" class="primary">Try release</button>
+          <button id="refund">Claim refund</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="memberPanel" hidden>
+      <h2>Member view</h2>
+      <p class="sub">Pay with tBNB. The name stays off-chain; the reference goes on-chain. Connect the member's wallet before paying.</p>
+      <div class="row">
+        <label class="grow">Name
+          <select id="memberName"></select>
+        </label>
+        <label class="narrow">Reference
+          <input id="memberRef" readonly />
+        </label>
+        <label class="narrow">Amount (tBNB)
+          <input id="memberAmount" type="text" inputmode="decimal" />
+        </label>
+        <button id="pay" class="primary">Pay</button>
+      </div>
+      <div class="status" id="payStatus"></div>
+    </section>
+
+    <section class="panel" id="treasurerPanel" hidden>
+      <h2>Treasurer view</h2>
+      <p class="sub">Paste the messy payment list. The AI transcribes; the app matches it to the chain.</p>
+      <textarea id="listText" rows="7" placeholder="Maria Santos - 0.10&#10;Jose Dela Cruz - 0.10&#10;Ella Garcia - 0.08"></textarea>
+      <div class="row">
+        <button id="demoList">Load demo list</button>
+        <button id="extract" class="primary">Extract with AI</button>
+        <span class="status" id="aiStatus"></span>
+      </div>
+      <div class="summary">
+        <div><span class="label">List total</span> <strong id="listTotal">—</strong></div>
+        <div><span class="label">Expected</span> <strong id="expectedTotal">—</strong></div>
+        <div><span class="label">On-chain</span> <strong id="onchainTotal">—</strong></div>
+        <div><span class="label">Gap</span> <strong id="gapTotal">—</strong></div>
+        <div><span class="label">Flags</span> <strong id="flagCount">—</strong></div>
+      </div>
+      <div class="table-wrap">
+        <table id="reconTable">
+          <thead>
+            <tr><th>Name</th><th>Amount</th><th>Ref</th><th>On-chain</th><th>Status</th><th>Note</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="status" id="reconStatus">No extraction yet.</div>
+    </section>
+  </main>
+
+  <script src="/vendor/ethers.umd.min.js"></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
