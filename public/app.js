@@ -177,7 +177,12 @@ async function connectWallet() {
     setStatus("Wallet connected. You can pay, release, or claim.", "success");
     if ($("contract").value.trim()) await loadCollection();
   } catch (err) {
-    setStatus(`Wallet error: ${shortError(err)}`, "error");
+    const code = rpcCode(err);
+    if (code === -32002) {
+      setStatus("MetaMask already has a request open. Click the MetaMask icon, approve or reject it, then try again.", "error");
+    } else {
+      setStatus(`Wallet error: ${shortError(err)}`, "error");
+    }
   } finally {
     setBusy($("connect"), false);
   }
@@ -681,8 +686,20 @@ function escapeHtml(s) {
   }[c]));
 }
 
+// ethers v6 buries the JSON-RPC code under different keys depending on the provider,
+// and err.code is often the string "UNKNOWN_ERROR" rather than the real number.
+function rpcCode(err) {
+  const codes = [
+    err?.code,
+    err?.info?.error?.code,
+    err?.error?.code,
+    err?.data?.originalError?.code
+  ];
+  return codes.find((c) => typeof c === "number") ?? codes.find(Boolean);
+}
+
 function shortError(err) {
-  if (err?.code === "ACTION_REJECTED" || err?.code === 4001) return "Request rejected in wallet.";
+  if (err?.code === "ACTION_REJECTED" || rpcCode(err) === 4001) return "Request rejected in wallet.";
   const revert = err?.revert?.args?.[0] ?? err?.reason;
   if (typeof revert === "string" && revert) return hintFor(revert);
   const raw = [err?.shortMessage, err?.reason, err?.message, err?.info?.error?.message]
