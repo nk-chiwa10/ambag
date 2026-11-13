@@ -27,6 +27,7 @@ function compile() {
     sources: { "AmbAG.sol": { content } },
     settings: {
       optimizer: { enabled: true, runs: 200 },
+      evmVersion: "paris",
       outputSelection: { "*": { "*": ["abi", "evm.bytecode.object"] } }
     }
   };

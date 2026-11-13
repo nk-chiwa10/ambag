@@ -67,14 +67,14 @@ async function main() {
     const balance = await provider.getBalance(member.address);
     console.log(`${row.name} (${member.address}) balance ${ethers.formatEther(balance)} tBNB`);
     if (balance < value) throw new Error(`${row.name} needs at least ${row.amount} tBNB plus gas`);
-    const c = contract.connect(member);
+    const c = new ethers.Contract(CONTRACT_ADDRESS, ABI, member);
     const tx = await c.contribute(happyId, ethers.encodeBytes32String(row.ref), { value });
     await tx.wait();
     console.log(`  paid ${row.amount} tBNB with ref ${row.ref}`);
   }
 
   console.log("Seeding the failed collection with 0.02 tBNB...");
-  const failedMember = contract.connect(members[0]);
+  const failedMember = new ethers.Contract(CONTRACT_ADDRESS, ABI, members[0]);
   const tx3 = await failedMember.contribute(
     failedId,
     ethers.encodeBytes32String(ROSTER[0].ref),

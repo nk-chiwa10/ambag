@@ -14,14 +14,14 @@ One link. One target. One rule. Members pay in tBNB on BSC Testnet. The AI trans
 
 ## 1. Deploy
 
-Open `build/AmbAG.sol` in Remix.
+```bash
+npm install
+npm run deploy
+```
 
-- Compiler: `0.8.19`, optimization on.
-- Environment: `Injected Provider — MetaMask`.
-- Network: BSC Testnet, chain ID `97`.
-- Deploy, then verify on `https://testnet.bscscan.com`.
+The script compiles with solc `0.8.19` (optimizer on, 200 runs, EVM `paris`), deploys to chain 97 from `DEPLOYER_KEY`, writes `CONTRACT_ADDRESS` to `.env`, and saves `build/AmbAG.artifact.json`. With an empty `DEPLOYER_KEY` it generates a throwaway wallet and prints the address to fund.
 
-Copy the contract address into `.env` as `CONTRACT_ADDRESS`.
+Verify on `https://testnet.bscscan.com/verifyContract` using the same compiler settings.
 
 ## 2. Configure
 

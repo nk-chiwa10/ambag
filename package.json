@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "node server.js",
     "deploy": "node scripts/deploy.js",
+    "wallets": "node scripts/wallets.js",
+    "selftest": "node scripts/selftest.js",
     "seed": "node scripts/seed.js"
   },
   "dependencies": {
