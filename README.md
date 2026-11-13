@@ -14,6 +14,53 @@ One link. One target. One rule. Members pay in tBNB on BSC Testnet. The AI trans
 - `npm run inspect` — read-only chain dump: collections, references, contributions, vendor balance. No key required.
 - `concepts_brief.md` — the brainstorm decisions and demo script.
 
+## Architecture
+
+| Layer | File | Responsibility |
+|---|---|---|
+| Contract | `build/AmbAG.sol` | Custody, target, deadline, release to a fixed vendor, pull refunds |
+| Backend | `server.js` | Static app + `/api/extract`; validates model output, never decides money |
+| Reconciliation | `public/reconcile.js` | Deterministic matching of extracted rows to on-chain contributions |
+| UI | `public/app.js` | Wallet, collection view, reconciliation table, release/refund actions |
+| Deploy | `scripts/deploy.js` | Compiles with solc, deploys to chain 97, writes the address |
+| Demo data | `scripts/wallets.js`, `scripts/seed.js` | Funds three members, creates both collections |
+
+Names never reach the chain. A contribution stores `bytes32 ref`, the payer address, the amount, and a timestamp; the roster that maps `AMB001` to a name stays in the browser.
+
+## Contract
+
+| Function | Rule |
+|---|---|
+| `createCollection(vendor, target, deadline)` | Vendor must be non-zero, target > 0, deadline in the future |
+| `contribute(id, ref) payable` | Rejects zero value, closed/released collections, and records the ref |
+| `release(id)` | Anyone can call it, only when `totalRaised >= target`; pays `totalRaised` to the vendor |
+| `claimRefund(id)` | Only after the deadline, only if the target failed; returns the caller's own contribution once |
+| `collections(id)` / `contributionsOf(id)` | Read-only, used by the UI and `npm run inspect` |
+
+Single file, compiler `0.8.19`, optimizer on (200 runs), EVM `paris`, hand-written reentrancy lock, no admin withdrawal, no upgradeability, no fees.
+
+## AI and reconciliation
+
+1. The treasurer pastes a payment list.
+2. `POST /api/extract` asks the model to transcribe it: `{ rows: [{ name, amount_tbnb, note }], unreadable: [] }`. The server validates every row and rejects bad amounts.
+3. `reconcileRows` normalizes names, aggregates contributions by reference, and flags `duplicate`, `short`, `unknown`, and `missing`.
+4. The treasurer confirms. The contract decides whether money moves.
+
+`MOCK_AI=1` returns canned rows so the demo never depends on the network. Set `MOCK_AI=0` and `OPENAI_API_KEY` for real extraction.
+
+## Privacy
+
+- No names, phone numbers, or receipts on-chain.
+- Demo data is fictional. Do not upload real GCash receipts to any AI service.
+- `.env` is ignored; `docs/deploy-log.md` holds only public addresses.
+
+## Status
+
+- Contract: compiles; local EVM tests pass (`npm run selftest`).
+- Chain: **not deployed yet** — see `docs/deploy-log.md`.
+- AI: mock mode; live path untested until a key is present.
+- Deck: `public/deck.html`.
+
 ## 1. Deploy
 
 ```bash
