@@ -65,6 +65,12 @@ function init() {
   $("memberName").addEventListener("change", updateMemberFields);
   $("contract").addEventListener("change", () => localStorage.setItem("ambag.contract", $("contract").value.trim()));
   $("collectionId").addEventListener("change", () => localStorage.setItem("ambag.collectionId", $("collectionId").value));
+  window.ethereum?.on?.("accountsChanged", async () => {
+    if (!state.provider) return;
+    state.signer = await state.provider.getSigner();
+    const addr = await state.signer.getAddress();
+    $("network").textContent = `Connected ${addr.slice(0, 6)}…${addr.slice(-4)} · chain ${CHAIN_ID}`;
+  });
 }
 
 async function connectWallet() {
