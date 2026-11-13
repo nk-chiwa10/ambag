@@ -96,7 +96,7 @@ contract AmbAG {
         uint256 amount = contributed[id][msg.sender];
         require(amount > 0, "nothing to refund");
         contributed[id][msg.sender] = 0;
-    c.totalRaised -= amount;
+        c.totalRaised -= amount;
         (bool ok, ) = payable(msg.sender).call{value: amount}("");
         require(ok, "send failed");
         emit Refunded(id, msg.sender, amount);
