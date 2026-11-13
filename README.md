@@ -48,6 +48,8 @@ Single file, compiler `0.8.19`, optimizer on (200 runs), EVM `paris`, hand-writt
 
 `MOCK_AI=1` returns canned rows so the demo never depends on the network. Set `MOCK_AI=0` and `OPENAI_API_KEY` for real extraction.
 
+Any OpenAI-compatible endpoint works. For Gemini, point `OPENAI_BASE_URL` at `https://generativelanguage.googleapis.com/v1beta/openai` and set `OPENAI_MODEL=gemini-2.5-flash` — no code change required.
+
 ## Privacy
 
 - No names, phone numbers, or receipts on-chain.
